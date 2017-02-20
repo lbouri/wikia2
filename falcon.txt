@@ -1,0 +1,144 @@
+==Introduction==
+: ''Falcon'' is an denovo using reads from pacbio and nanopore technology.
+
+In fact, long read alignment against themselves are used to build consensus sequences and then to generate a genome assembly.
+
+''Falcon'' is advertised as an assembler of diploid genomes.
+
+It is advisable to have a coverage of 100x of Pacbio or Minion reads for a denovo assembly.
+
+: Website: https://github.com/PacificBiosciences/FALCON
+
+==Installation==
+: ''Falcon'' can be downloaded as source code to install on a SGE environnement.
+The installation requires gcc (4.8.3+) and python (2.7+). FALCON-integrate is an integration package for ''FALCON'' and its dependencies (DALIGNER, DAZZ_DB, pypeFLOW,...)
+
+Create a virtual Python environments and activate it:
+
+    $ FC=fc_env
+    $ virtualenv -no-site-packages -always-copy $FC
+    $ . $FC/bin/activate
+
+Download and install Falcon and its dependencies:
+
+    $ git clone git://github.com/PacificBiosciences/FALCON-integrate.git
+    $ cd FALCON-integrate
+    $ git submodule update --init
+    $ cd pypeFLOW
+    $ python setup.py install
+    $ cd ..
+    $ cd FALCON
+    $ python setup.py install
+    $ cd ..
+    $ cd DAZZ_DB/
+    $ make
+    $ cp DBrm DBshow DBsplit DBstats fasta2DB $FC/bin/
+    $ cd ..
+    $ cd DALIGNER
+    $ make
+    $ cp daligner daligner_p DB2Falcon HPCdaligner LA4Falcon LAmerge LAsort  $FC/bin
+    $ cd ..
+
+==Input data==
+: In order to be launched, ''Falcon'' needs a configuration file named "fc_run.cfg", listing command lines to be executed, on which node in the cluster, with which resources and with which data.
+
+The parameters "input-fofn" and "jobqueue" must be filled in before launching a job on a node of the cluster.
+
+The file with the ".fofn" extension contains, in each line, a path to the dataset of long reads to assemble (FASTA file).
+
+Lastly, if the parameter "input-type" from the configuration file is set to "preads" instead of "raw", ''Falcon'' will consider that the long reads have already been corrected.
+
+==Pipeline==
+: Make sure virtualenv is activated, then execute the following command in order to launch the ''Falcon'' assembler:
+
+    $ fc_run.py fc_run.cfg
+
+The ''Falcon'' pipeline is divided in the following stages:
+
+*Raw sub-reads overlapping for error correction
+*Pre-assembly and error correction
+*Overlapping detection of the error corrected reads
+*Overlap filtering
+*Constructing graph from overlaps
+*Constructing contig from graph
+
+==Encountered errors==
+: <b>Error</b>: fasta2DB : Could not find file
+
+<b>Solution</b> : grant access right to fasta2DB 
+
+
+: <b>Error</b>: pacbio header line name inconsistent
+
+<b>Solution</b> : Use a script to change the header and make them look like header from pacbio data.
+
+==Output data==
+
+: The folder "2-asm-falcon" holds data about the graph and the contigs generated from the assembly. The final assembly can be found in the file "p-ctg.fa"
+
+==Assembly evaluation==
+:Dataset:
+
+{| class="wikitable"
+|-
+!Reference genome
+|Escherichia coli k-12 MG1655 1 chromosome (4 641 652 pb)
+|-
+!Pacbio reads (P6C4)
+|87497 reads corrected by ''Lordec'' (100x coverage)
+|-
+!Illumina reads (MiSeq)
+|16759877 reads (2x150pb)
+|}
+
+The reference genome is used to evaluate the quality of the assembly, based on metrics produced by the QUAST software.
+
+:<b># Contigs (> 1000pb)</b>:  Total number of contigs exceeding 1000 bp in the assembly.
+
+:<b>Largest contig</b>: The length of the longest contig in the assembly.
+
+:<b>Total length</b>: total number of bases in the assembly.
+
+:<b>N50</b>: the length for which the collection of all contigs of that length or longer covers at least half an assembly.
+
+:<b># Misassembled contigs</b>: the number of positions in the contigs (breakpoints) that satisfy one of the following criteria :
+:::-The left flanking sequence aligns over 1 kbp away from the right flanking sequence on the reference.
+:::-Flanking sequences overlap on more than 1 kbp
+:::-Flanking sequences align to different strands or different chromosomes; .
+
+:<b>Misassembled contigs length</b>: the total number of bases in misassembled contigs.
+
+:<b>Genome fraction</b>: the percentage of aligned bases in the reference genome.
+
+{| class="wikitable"
+|-
+!Metrics (Quast)
+!Falcon assembly
+|-
+!# contigs
+|33
+|-
+!N50
+|291737
+|-
+!Largest contig
+|938257
+|-
+!Execution time
+|53m26s
+|-
+!Total length
+|4845711
+|-
+!# misassembled contigs
+|12
+|-
+!misassembled contigs length
+|3259563
+|-
+!Genome fraction
+|94.5
+|}
+
+More assembly results can be found at
+

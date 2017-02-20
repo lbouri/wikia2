@@ -1,0 +1,91 @@
+==Introduction==
+:''Smartdenovo'' is a de novo assembler for PacBio and Oxford Nanopore (ONT) data. It produces a sequence consensus after aligning reads against themselves.
+It doesn't have a correction stage.
+Website: https://github.com/ruanjue/smartdenovo
+
+==Installation==
+:''Smartdenovo'' requires an unix system.
+
+    $ git clone https://github.com/ruanjue/smartdenovo.git && (cd smartdenovo; make)
+
+==Input data==
+: ''Smartdenovo'' takes long reads sequences in a FASTA file format.
+
+==Pipeline==
+: ''Smartdenovo'' has several tools to find overlaps between reads, to identify the chimeric or low-quality regions, and then to construct consensus sequences. 
+
+These tools are launched by the perl script "smartdenovo.pl".
+
+    $ smartdenovo.pl -p prefix reads.fa > prefix.mak
+    $ make -f prefix.mak
+
+==Output data==
+: The genome assembly is in the file with ".dmo.lay.utg" extension
+
+==Assembly evaluation==
+
+Dataset:
+
+{| class="wikitable"
+|-
+!Reference genome
+|Escherichia coli k-12 MG1655 1 chromosome (4 641 652 pb)
+|-
+!Pacbio reads (P6C4)
+|87497 reads corrected by ''Lordec''(100x coverage)
+|-
+!Illumina reads (MiSeq)
+|16759877 reads (2x150pb)
+|}
+
+The reference genome is used to evaluate the quality of the assembly, based on metrics produced by the QUAST software.
+
+:<b># Contigs (> 1000pb)</b>:  Total number of contigs exceeding 1000 bp in the assembly.
+
+:<b>Largest contig</b>: The length of the longest contig in the assembly.
+
+:<b>Total length</b>: total number of bases in the assembly.
+
+:<b>N50</b>: the length for which the collection of all contigs of that length or longer covers at least half an assembly.
+
+:<b># Misassembled contigs</b>: the number of positions in the contigs (breakpoints) that satisfy one of the following criteria :
+:::-The left flanking sequence aligns over 1 kbp away from the right flanking sequence on the reference.
+:::-Flanking sequences overlap on more than 1 kbp
+:::-Flanking sequences align to different strands or different chromosomes; .
+
+:<b>Misassembled contigs length</b>: the total number of bases in misassembled contigs.
+
+:<b>Genome fraction</b>: the percentage of aligned bases in the reference genome.
+
+{| class="wikitable"
+|-
+!Metrics (Quast)
+!Smartdenovo assembly
+|-
+!# contigs
+|12
+|-
+!N50
+|535879
+|-
+!Largest contig
+|1303952
+|-
+!Execution time
+|30m46s
+|-
+!Total length
+|4840284
+|-
+!# misassembled contigs
+|6
+|-
+!misassembled contigs length
+|3730610
+|-
+!Genome fraction
+|95.90
+|}
+
+More assembly results can be found at
+

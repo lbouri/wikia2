@@ -1,0 +1,143 @@
+===Introduction===
+:''Jabba'' is a hybrid corrector, taking as input a DeBruijn graph resulting from an assembly of short reads and uses it to correct long reads.
+
+Website : https://github.com/gmiclotte/Jabba
+
+===Installation===
+:''Jabba'' is available for Linux and require Cmake 2.6+ et GCC 4.7+. It is possible to install ''Karect'' for the step of short reads correction and ''Brownie'' for the construction of the DeBruijn graph. Note that ''Jabba'' needs ''sparsehash'' to be installed.
+
+Install ''karect'':
+
+    $ git clone https://github.com/aminallam/karect.git
+    $ cd karect
+    $ make
+    $ cd ..
+
+Install sparsehash
+
+    $ git clone https://github.com/sparsehash/sparsehash.git
+    $ ./configure –prefix=<chemin vers le dossiersparsehas>
+    $ make
+
+Install brownie:
+
+    $ git clone https://github.com/jfostier/brownie.git
+    $ mkdir build
+    $ mkdir bin
+    $ cd build
+    $ cmake -DSPARSEHASH_INCLUDE_DIR=<chemin vers le dossiersparsehas/include>
+
+Install sparsehash:
+
+    $ git clone https://github.com/sparsehash/sparsehash.git
+    $ ./configure –prefix=<chemin vers le dossiersparsehas> -DMAXKMERLENGTH=75 ..
+    $ make brownie
+    $ cp src/brownie ../bin/brownie
+    $ cd ..
+
+Installer Jabba:
+
+    $ git clone https://github.com/gmiclotte/Jabba.git
+    $ cd Jabba
+    $ ./compile.sh
+    $ cd ..
+
+
+===Input data===
+:''Jabba'' takes long reads in a FASTA or FASTQ file format and the DeBruijn graph constructed by ''Brownie'' from the short reads, themselves corrected by a tool like ''Karect''.
+
+===Pipeline===
+:First, the authors software recommend to run short reads correction with ''karect'':
+
+    $ mkdir karect_output
+    $ ./karect/karect -correct -matchtype=hamming -celltype=haploid -inputfile=short_reads.fastq -resultdir=karect_output -tempdir=karect_output
+
+Then, start long reads correction:
+
+    $ /Jabba/bin/jabba -o jabba_output -k 75 -brownie_output/DBGraph.fasta -fastq long_reads.fastq
+        
+:<b>l</b>: minimum seed length
+:<b>k</b>: kmer length used in Debruijn graph.
+
+However, with each new tested dataset and the construction of a new De Bruijn graph, the corrected reads must be redirected to a new output file.
+''Jabba'' corrects the long reads by aligning them on a DeBruijn graph using a "seed and extend" method where the "maximum exact matches" represent the seeds.
+
+===Output dataset===
+:The corrected sequences will be in the specified output folder, contained in a "Jabba-input_filename.fasta" file.
+
+==Correction evaluation==
+:Dataset:
+
+{| class="wikitable"
+|-
+!Reference genome
+|Escherichia coli k-12 MG1655 1 chromosome (4 641 652 pb)
+|-
+!Pacbio reads (P6C4)
+|87497 raw reads (100x coverage)
+|-
+!Illumina reads (MiSeq)
+|16759877 reads (2x150pb)
+|}
+
+The reference genome is used to evaluate long reads correction, based on metrics produced by Blasr alignments before the assembly and by the QUAST software after the assembly.
+
+''Blasr'' alignment metrics:
+
+:<b>Size</b>: The sum of the length of the corrected long reads, divided by the length of uncorrected long reads.
+
+:<b>Execution time</b>: Corrector execution time.
+
+:<b>% mapped region</b>: Proportion of corrected reads that \emph{BLASR} succeeded in mapping to the reference genome.
+
+:<b>Mean number of match</b>:  The average number of match per long read.
+
+:<b>% identity</b>: Percentage of identity given by \emph{BLASR} for the region of long read that could be aligned.
+
+''Quast'' metrics:
+
+:<b># contigs (> 1000pb)</b>: Total number of contigs exceeding 1000 bp after assembly.
+
+:<b>Total length</b>: Assembly length.
+
+:<b>N50</b>: Length for which the collection of all contigs of this length or greater, covers at least half of the assembly.
+
+:<b>Genome fraction (\%)</b>: the percentage of aligned bases in the reference genome.
+
+The assembly step is performed by ''Smartdenovo''.
+
+{| class="wikitable"
+|-
+!Metrics (Blasr, Quast)
+!Nanocorr correction
+|-
+!Size
+|84.1
+|-
+!Execution time
+|304s
+|-
+!% mapped region
+|99.9
+|-
+!Mean number of match
+|7 670
+|-
+!% identity
+|99.9
+|-
+!# contigs (>=1000pb)
+|44
+|-
+!N50
+|112 509
+|-
+!Total length
+|4 314 638
+|-
+!Genome fraction
+|92.9
+|}
+
+More assembly results can be found at
+

@@ -1,0 +1,131 @@
+==Introduction==
+:''Cerulean'' extends the contigs assembled from short readings, such as Illumina, using long reads.
+
+Website: http://sourceforge.net/projects/ceruleanassembler/
+
+==Installation==
+:''Cerulean'' requires linux system and the installation of this software:
+
+:*Python 2.7.1
+:*numpy et matplotlib (python libraries)
+:*Abyss assembler http://www.bcgsc.ca/platform/bioinfo/software/abyss
+:*Blasr (from SMRT Analysis toolkit) : http://pacbiodevnet.com/
+:*Pbjelly : https://sourceforge.net/projects/pb-jelly/
+
+Download and extract Cerulean scripts:
+
+    $ wget http://sourceforge.net/projects/ceruleanassembler/files/Cerulean_v_0_1.tar.gz
+    $ tar -zxf Cerulean_v_0_1.tar.gz
+
+==Input data==
+:''Cerulean'' needs the contigs assembled from the short reads assembler ''Abyss'', as well as the mapping of the long reads  on these contigs, performed by ''Blasr''.
+
+Assembly from Illumina reads.
+
+    $ abyss-pe k=64 n=10 in='reads1.fastq reads2.fastq' name=$<$dataname$>$
+
+:<b>k</b>: k-mer length
+:<b>n</b> : minimum number of pairs required for building contigs
+
+2 files are then created :
+
+:*"$<$dataname$>$-contigs.fa": contigs sequences
+:*"$<$dataname$>$-contigs.dat": graph structure
+
+Mapping of long reads on contigs with ''Blasr'' :
+
+    $ blasr <dataname>_pacbio.fa <dataname>-contigs.fa -minMatch 10 -minPctIdentity 70 -bestn 30 -nCandidates 30 -maxScore 500 -nproc <numthreads> -noSplitSubreads -out <dataname>_pacbio_contigs_mapping.fasta.m4
+
+:<b>minMatch</b>: Minimum seed length
+:<b>minPctIdentity</b>: Minimum pourcentage of identity
+:<b>bestn</b>: display the n best alignments
+:<b>nCandidates</b>: display the n best candidates
+:<b>maxScore</b>: maximum score to display
+:<b>nproc</b>: number of threads
+:<b>noSpliSubreads</b>: reads are not splited
+
+==Pipeline==
+:All input files must be in the same folder :
+
+:*$<$dossier$>$/$<$dataname$>$-contigs.fa
+:*$<$dossier$>$/$<$dataname$>$-contigs.dot
+:*$<$dossier$>$/$<$dataname$>$\_pacbio\_contigs\_mapping.fasta.m4
+
+''Celurean'' is started by the following command line :
+
+    $ python src/Cerulean.py --dataname <dataname> --basedir <basedir> --nproc <numthreads>
+
+:<b>dataname</b>: datasets name
+:<b>basedir</b>: pathway to input folder
+:<b>nproc</b>: number of threads
+
+==Output data==
+:''Celurean'' generates the file "$<$dossier$>$_cerulean.fasta", containing the assembly results. 
+Finally,''Cerulean'' authors recommended using ''PBJelly'' in order to close remaining gaps.
+
+==Assembly evaluation==
+:Dataset:
+
+{| class="wikitable"
+|-
+!Reference genome
+|Escherichia coli k-12 MG1655 1 chromosome (4 641 652 pb)
+|-
+!Pacbio reads (P6C4)
+|87497 reads corrected by Cerulean (100x coverage)
+|-
+!Illumina reads (MiSeq)
+|16759877 reads (2x150pb)
+|}
+
+The reference genome is used to evaluate the quality of the assembly, based on metrics produced by the QUAST software.
+
+:<b># Contigs (> 1000pb)</b>:  Total number of contigs exceeding 1000 bp in the assembly.
+
+:<b>Largest contig</b>: The length of the longest contig in the assembly.
+
+:<b>Total length</b>: total number of bases in the assembly.
+
+:<b>N50</b>: the length for which the collection of all contigs of that length or longer covers at least half an assembly.
+
+:<b># Misassembled contigs</b>: the number of positions in the contigs (breakpoints) that satisfy one of the following criteria :
+:::-The left flanking sequence aligns over 1 kbp away from the right flanking sequence on the reference.
+:::-Flanking sequences overlap on more than 1 kbp
+:::-Flanking sequences align to different strands or different chromosomes; .
+
+:<b>Misassembled contigs length</b>: the total number of bases in misassembled contigs.
+
+:<b>Genome fraction</b>: the percentage of aligned bases in the reference genome.
+
+{| class="wikitable"
+|-
+!Metrics (Quast)
+!Cerulean assembly
+|-
+!# contigs
+|72
+|-
+!N50
+|121474
+|-
+!Largest contig
+|287981
+|-
+!Execution time
+|4h25m26s
+|-
+!Total length
+|4772924
+|-
+!# misassembled contigs
+|68
+|-
+!misassembled contigs length
+|4467714
+|-
+!Genome fraction
+|98.9
+|}
+
+More assembly results can be found at
+

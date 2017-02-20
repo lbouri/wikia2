@@ -1,0 +1,138 @@
+==Introduction==
+:''Nanocorr'' is a hybrid corrector designed for nanopore long reads using blastn to align short reads on long reads.
+
+Website: https://github.com/jgurtowski/nanocorr
+
+==Installation==
+:''Nanocorr'' has been designed to work in a SGE or similar environment (GNU parallel). Note that the python module "h5py" requires the installation of the hdf5 library
+
+Import ''nanocorr'':
+
+    $ git clone https://github.com/jgurtowski/nanocorr
+    $ cd nanocorr
+
+Create a virtual environment to install python dependencies:
+
+    $ virtualenv nanocorr_ve
+    $ source nanocorr_ve/bin/activate
+
+python dependencies installation:
+
+    $ pip install git+https://github.com/cython/cython
+    $ export HDF5_DIR=/<chemin vers la librairie hdf5>
+    $ export LD_LIBRARY_PATH=$HDF5_DIR/lib:$LD_LIBRARY_PATH
+    $ export PATH=$HDF5_DIR/bin:$PATH
+    $ pip install numpy
+    $ pip install h5py
+    $ pip install git+https://github.com/jgurtowski/pbcore_python
+    $ pip install git+https://github.com/jgurtowski/pbdagcon_python
+    $ pip install git+https://github.com/jgurtowski/jbio
+    $ pip install git+https://github.com/jgurtowski/jptools
+
+Install nanocorr:
+
+     $ python setup.py install
+
+==Input data==
+:''Nanocorr'' is supposed to correct only long reads from the nanopore technology (FASTA or FASTQ file format).
+
+==Pipeline==
+:First, partition long reads into multiple files:
+
+    $  python partition.py 100 500 nanopore_reads.fa
+
+Then, run the "nanocorr.py" script in order to start long reads correction:
+
+    $ qsub -cwd -v PATH,LD_LIBRARY_PATH -t 1:500 -j 500 -o nanocorr_out /path/to/nanocorr.py query.fa reference.fa
+
+:<b>t</b>:Number of files in the folder containing the partitioned long reads
+:<b>j</b>: Declares whether the standard error stream of the task will be merged with the standard output stream of the same task
+
+''Nanocorr'' launches blast to align short reads on Nanopore long reads and then uses a dynamic programming algorithm based on the longest increasing subsequence problem to select sets of short reads corresponding to each long read.
+The consensus reads are then calculated using ''pbdagcon''
+
+==Output data==
+:The corrected sequences will be divided into several files "p000N.blast6.r.fasta" and will have to be concatenated in one file:
+
+        $ cat p*.blast6.r.fasta > output_file.fasta
+
+==Encountered errors==
+:<b>Error</b>: c.fatal error: hdf5.h: No such file or directory virtualenv}
+<b>Solution</b>: installation of hdf5 library
+
+==Correction evaluation==
+:Dataset:
+
+{| class="wikitable"
+|-
+!Reference genome
+|Escherichia coli k-12 MG1655 1 chromosome (4 641 652 pb)
+|-
+!Pacbio reads (P6C4)
+|87497 raw reads (100x coverage)
+|-
+!Illumina reads (MiSeq)
+|16759877 reads (2x150pb)
+|}
+
+The reference genome is used to evaluate long reads correction, based on metrics produced by Blasr alignments before the assembly and by the QUAST software after the assembly.
+
+''Blasr'' alignment metrics:
+
+:<b>Size</b>: The sum of the length of the corrected long reads, divided by the length of uncorrected long reads.
+
+:<b>Execution time</b>: Corrector execution time.
+
+:<b>% mapped region</b>: Proportion of corrected reads that \emph{BLASR} succeeded in mapping to the reference genome.
+
+:<b>Mean number of match</b>:  The average number of match per long read.
+
+:<b>% identity</b>: Percentage of identity given by \emph{BLASR} for the region of long read that could be aligned.
+
+''Quast'' metrics:
+
+:<b># contigs (> 1000pb)</b>: Total number of contigs exceeding 1000 bp after assembly.
+
+:<b>Total length</b>: Assembly length.
+
+:<b>N50</b>: Length for which the collection of all contigs of this length or greater, covers at least half of the assembly.
+
+:<b>Genome fraction (\%)</b>: the percentage of aligned bases in the reference genome.
+
+The assembly step is performed by ''Smartdenovo''.
+
+{| class="wikitable"
+|-
+!Metrics (Blasr, Quast)
+!Nanocorr correction
+|-
+!Size
+|67.55
+|-
+!Execution time
+|69 147s
+|-
+!% mapped region
+|96.85
+|-
+!Mean number of match
+|6 184
+|-
+!% identity
+|98.04
+|-
+!# contigs (>=1000pb)
+|1
+|-
+!N50
+|721 863
+|-
+!Total length
+|4 721 863
+|-
+!Genome fraction
+|96.06
+|}
+
+More assembly results can be found at
+

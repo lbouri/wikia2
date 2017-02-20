@@ -1,0 +1,145 @@
+==Introduction==
+:''LoRDEC'' is a hybrid corrector, using a DeBruijn graph constructed from short reads to correct long reads.
+
+Website : http://www.atgc-montpellier.fr/lordec/
+
+==Installation==
+:''LoRDEC'' is available on linux and requires Cmake 2.6+ and GCC 4.7+. 
+
+Import ''LoRDEC'' and the GATB library (http://gatb-core.gforge.inria.fr) :
+
+    $ wget http://www.atgc-montpellier.fr/download/sources/lordec/LoRDEC-0.6.tar.gz
+    $ tar zxvf LoRDEC-0.6.tar.gz
+    $ cd LoRDEC-0.6
+    $ wget https://github.com/GATB/gatb-core/releases/download/v1.1.0/gatb-core-1.1.0-bin-Linux.tar.gz
+    $ tar zxvf gatb-core-1.1.0-bin-Linux.tar.gz
+
+Modify the variable GATB_VER from the Makefile (1.1.0)
+Install ''LoRDEC'':
+
+    $ make
+    $ cd ..
+
+==Input data==
+:''LoRDEC'' requires short readings in FASTA or FASTQ file format and long reads in FASTA or FASTQ file format.
+
+==Pipeline==
+:Start the long reads correction with the binary "lordec-correct":
+
+    $ lordec-correct -2 illumina.fasta -k 19 -s 3 -i pacbio.fasta -o pacbio-corrected.fasta
+        
+:<b>2</b>: File of short reads.
+:<b>k</b>: Size of the kmer used in the Debruijn graph
+:<b>s</b>: Abundance threshold of a kmer to be considered correct
+:<b>i</b>: Input file 
+:<b>o</b>: Output file
+
+A series of steps is then performed in order to correct the long reads:
+
+:*Construction of a Debruijn graph from short readings
+:*Suppression of k-mer with an occurrence less than the s value
+:*Choose an optimal path of the graph by calculating the edit distance between the path and a region of long read.
+
+==Output data==
+:The corrected sequences will be in the output file indicated after the "-o" parameter. The output file in FASTA format contains long reads. Corrected sequences are defined by uppercase letters while uncorrected sequences appears as lowercase letters.
+''Lordec'' offers the possibility to remove the uncorrected sequences at the beginning and at the end of the long reading or to keep only the corrected sequences.
+
+    $ lordec-trim -i fichier_reads.fasta -o fichier_trim.fasta
+
+:<b>i</b>: corrected reads file
+:<b>o</b>: output file
+
+    $ loredec-trim-split -i fichier_reads.fasta -o fichier_trim_split.fasta
+
+:<b>i</b>: corrected reads file
+:<b>o</b>: output file
+
+==Correction evaluation==
+:Dataset:
+
+{| class="wikitable"
+|-
+!Reference genome
+|Escherichia coli k-12 MG1655 1 chromosome (4 641 652 pb)
+|-
+!Pacbio reads (P6C4)
+|87497 raw reads (100x coverage)
+|-
+!Illumina reads (MiSeq)
+|16759877 reads (2x150pb)
+|}
+
+The reference genome is used to evaluate long reads correction, based on metrics produced by Blasr alignments before the assembly and by the QUAST software after the assembly.
+
+''Blasr'' alignment metrics:
+
+:<b>Size</b>: The sum of the length of the corrected long reads, divided by the length of uncorrected long reads.
+
+:<b>Execution time</b>: Corrector execution time.
+
+:<b>% mapped region</b>: Proportion of corrected reads that \emph{BLASR} succeeded in mapping to the reference genome.
+
+:<b>Mean number of match</b>:  The average number of match per long read.
+
+:<b>% identity</b>: Percentage of identity given by \emph{BLASR} for the region of long read that could be aligned.
+
+''Quast'' metrics:
+
+:<b># contigs (> 1000pb)</b>: Total number of contigs exceeding 1000 bp after assembly.
+
+:<b>Total length</b>: Assembly length.
+
+:<b>N50</b>: Length for which the collection of all contigs of this length or greater, covers at least half of the assembly.
+
+:<b>Genome fraction (\%)</b>: the percentage of aligned bases in the reference genome.
+
+The assembly step is performed by ''Smartdenovo''.
+
+{| class="wikitable"
+|-
+!Metrics (Blasr, Quast)
+!colspan="6"|Lordec correction
+|-
+!
+|trimmed read
+|untrimmed reads
+|-
+!Size
+|82.72
+|96.43
+|-
+!Execution time
+|2 846s
+|2 846s
+|-
+!% mapped region
+|98.87
+|96.43
+|-
+!Mean number of match
+|1 896
+|7 664
+|-
+!% identity
+|99.57
+|96.78
+|-
+!# contigs (>=1000pb)
+|39
+|12
+|-
+!N50
+|197 117
+|535 879
+|-
+!Total length
+|4 535 627
+|4 840 284
+|-
+!genome fraction
+|97.54
+|95.90
+|} 
+
+More assembly results can be found at
+

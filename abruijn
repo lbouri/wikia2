@@ -1,0 +1,103 @@
+==Introduction==
+:''Abruijn'' is a denovo assembler, currently under development, create an A-bruijn graph from long reads.
+
+Website : https://github.com/fenderglass/ABruijn
+
+==Installation==
+:''Abruijn'' requires an unix system and Blasr.
+
+''Blasr'' installation:
+
+    $ git clone git://github.com/PacificBiosciences/blasr.git blasr
+    $ ./configure.py --no-pbbam HDF5_INCLUDE=f1 HDF5_LIB=f2 
+    $ make blasr
+
+''Abruijn'' installation:
+
+    $ git clone https://github.com/fenderglass/ABruijn.git
+    $ cd Abruijn
+    $ make
+
+==Input data==
+:''Abruijn'' requires long reads stored in a FASTA file format, as well as the estimated coverage of long reads.
+
+==Pipeline==
+:The ''Abruijn'' software begins by pre-assembling the long erroneous reads. To do so, ''Abruijn'' constructs an A-bruijn graph from solid kmers.Then, ''Abruijn'' looks for a path in the A-bruijn graph, thus giving a pre-assembled genome with errors.
+Finally, ''Abruijn'' use the ''BLASR'' alignment of the long reads against the preassembled genome in order to obtain a corrected assembly of the genome.
+
+The following command line launch the assembly:
+
+    $ python abruijn.py -t 8 -k 16 reads.fasta <dossier de sortie> <taux de couverture>
+
+::<b>t</b>: number of threads
+::<b>k</b>: kmer length
+
+==Output data==
+:Corrected sequences are located in a "polished.fasta" file, stored in the specified output folder.
+
+==Assembly evaluation==
+:Dataset:
+
+{| class="wikitable"
+|-
+!Reference genome
+|Escherichia coli k-12 MG1655 1 chromosome (4 641 652 pb)
+|-
+!Pacbio reads (P6C4)
+|87497 reads corrected by Abruijn (100x coverage)
+|-
+!Illumina reads (MiSeq)
+|16759877 reads (2x150pb)
+|}
+
+The reference genome is used to evaluate the quality of the assembly, based on metrics produced by the QUAST software.
+
+:<b># Contigs (> 1000pb)</b>:  Total number of contigs exceeding 1000 bp in the assembly.
+
+:<b>Largest contig</b>: The length of the longest contig in the assembly.
+
+:<b>Total length</b>: total number of bases in the assembly.
+
+:<b>N50</b>: the length for which the collection of all contigs of that length or longer covers at least half an assembly.
+
+:<b># Misassembled contigs</b>: the number of positions in the contigs (breakpoints) that satisfy one of the following criteria :
+:::-The left flanking sequence aligns over 1 kbp away from the right flanking sequence on the reference.
+:::-Flanking sequences overlap on more than 1 kbp
+:::-Flanking sequences align to different strands or different chromosomes; .
+
+:<b>Misassembled contigs length</b>: the total number of bases in misassembled contigs.
+
+:<b>Genome fraction</b>: the percentage of aligned bases in the reference genome.
+
+{| class="wikitable"
+|-
+!Metrics (Quast)
+!Abruijn assembly
+|-
+!# contigs
+|1
+|-
+!N50
+|4642563
+|-
+!Largest contig
+|4642563
+|-
+!Execution time
+|1h57m29s
+|-
+!Total length
+|4642563
+|-
+!# misassembled contigs
+|1
+|-
+!misassembled contigs length
+|4642563
+|-
+!Genome fraction
+|99.9
+|}
+
+More assembly results can be found at
+

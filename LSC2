@@ -1,0 +1,140 @@
+==Introduction==
+
+''LSC 2'' is a hybrid corrector of long reads. Long reads and short reads are first compressed into homopolymers, then short reads are mapped to long reads with ''Bowtie2''. Finally, the short read consensus replaces long reads sequences.
+
+Website :  http://www.healthcare.uiowa.edu/labs/au/LSC/default.asp
+
+==Installation==
+
+''LSC 2'' can be downloaded as pre-compiled binaries. ''Bowtie2'' must be installed.
+	
+Extraction of pre-compiled binaries files:
+    $ tar zxvf LSC-2.0.tar.gz
+
+==Input data==
+
+''LSC 2'' takes FASTA or FASTQ file format as input.
+
+
+==Pipeline==
+
+runLSC script divides long read correction in 5 steps: 
+:*The sequences of long and the short reads are transformed by homopolymer compression so that each sequence of the same nucleotide is replaced by a single nucleotide of the same type.
+:*The short reads quality is checked. Indeed, some of these reads contain too much N letters or are too short. 
+:*The short reads are aligned against the long ones with Bowtie2.
+:*The long reads are then modified according to the information provided by the short reads consensus obtained with previous alignment.
+:*After that the correction points have been replaced by the corresponding short reads consensus, the rest of the compressed points are decompressed.
+
+    $runLSC.py --long_reads LR.fa --short_reads SR.fa --specific_tempdir temp --output output_dir
+
+:<b>longs_reads</b>: long reads file.
+:<b>short_reads</b>: short reads file.
+:<b>specific_tempdir</b>: folder containing temporary files (optional).
+:<b>output</b>: final assembly folder.
+
+==Encountered errors==
+
+:<b>Error</b>:Died at /LSC-2.0/bin/../utilities/explode\_fasta.pl
+
+ValueError: invalid literal for int() with base 10: ''}
+
+<b>solution</b>: Convert short reads from FASTQ format to FASTA format (AWK command line or Biopython Seq.IO module).
+
+:<b>Error</b>:[bam_header_read] EOF marker is absent. The input is probably truncated.
+
+<b>solution</b>: Install ''Bowtie2''.
+
+==Output data==
+The corrected sequences will be in the "corrected_read.fasta" file, while the "full_LR.fasta" file holds concatenate uncorrected terminus sequences and corrected sequences. Both files are located in the final assembly folder.
+
+==Correction evaluation==
+
+Dataset:
+
+{| class="wikitable"
+|-
+!Reference genome
+|Escherichia coli k-12 MG1655 1 chromosome (4 641 652 pb)
+|-
+!Pacbio reads (P6C4)
+|87 497 raw reads (100x coverage)
+|-
+!Illumina reads (MiSeq)
+|16 759 877 reads (2x150pb)
+|}
+
+The reference genome is used to evaluate long reads correction, based on metrics produced by Blasr alignments before the assembly and by the QUAST software after the assembly.
+
+''Blasr'' alignment metrics:
+
+:<b>Size</b>: The sum of the length of the corrected long reads, divided by the length of uncorrected long reads.
+
+:<b>Execution time</b>: Corrector execution time.
+
+:<b>% mapped region</b>: Proportion of corrected reads that \emph{BLASR} succeeded in mapping to the reference genome.
+
+:<b>Mean number of match</b>:  The average number of match per long read.
+
+:<b>% identity</b>: Percentage of identity given by \emph{BLASR} for the region of long read that could be aligned.
+
+''Quast'' metrics:
+
+:<b># contigs (> 1000pb)</b>: Total number of contigs exceeding 1000 bp after assembly.
+
+:<b>Total length</b>: Assembly length.
+
+:<b>N50</b>: Length for which the collection of all contigs of this length or greater, covers at least half of the assembly.
+
+:<b>Genome fraction (\%)</b>: the percentage of aligned bases in the reference genome.
+
+
+The assembly step is performed by ''Smartdenovo''.
+
+{| class="wikitable"
+|-
+!Metrics (Blasr, Quast)
+!colspan="6"|LSC-2 correction assembly 
+|-
+!
+|trimmed read
+|untrimmed reads
+|-
+!Size
+|90.45
+|94.11
+|-
+!Execution time
+|8 634 43s
+|8 634 43s
+|-
+!% mapped region
+|96.61
+|93.94
+|-
+!Mean number of match
+|4 591
+|7 711
+|-
+!% identity
+|96.68
+|96.23
+|-
+!# contigs (>=1000pb)
+|47
+|21
+|-
+!N50
+|120 585
+|368 150
+|-
+!Total length
+|4 252 602
+|4 789 038
+|-
+!genome fraction
+|82.98
+|95.94
+|}
+
+More assembly results can be found at
+

@@ -1,0 +1,134 @@
+==Introduction==
+:''Ectools'' is a hybrid corrector, taking as input unitigs from a short reads assembly uses them to correct long reads.
+
+Website : https://github.com/jgurtowski/ectools
+
+==Installation==
+:''Ectools'' requires the prior installation of ''Mummer'' and ''blastn''. ''ECtools'' comes in the form of series of python scripts located in the ''Ectools'' (github page: https://github.com/jgurtowski/ectools)
+
+Import the folder containing ''ECtools'' scripts:
+
+    $ git clone https://github.com/jgurtowski/ectools.git
+    $ cd ectools
+
+==Input data==
+:''Ectools'' needs a contigs file generated from short reads as well as a file including long reads.
+
+==Pipeline==
+:Fill the variable "ECtools\_HOME" with the path for input data:
+
+    $ ECTOOLS_HOME=/path/to/this/directory
+
+Create a folder for long reads correction:
+
+    $ mkdir organism_correct
+
+Create symbolic link to contigs file:
+
+    $ cd organism_correct
+    $ ln -s /path/to/organims_contigs.fasta
+
+''Ectools'' authors recommend keeping reads larger than 1Kb.
+Then, partition long reads:
+
+    $ python ${ECTOOLS_HOME}/partition.py 20 500 pbreads.legnth_filtered.fa
+
+Copy the bash script for correction to the main folder:
+
+    $ cp ${ECTOOLS_HOME}/correct.sh .
+
+Modify the global variables at the beginning of the correct.sh script and then run the next command line to correct long reads:
+
+    $ for i in {0001..000N}; do cd $i; qsub -cwd -j y -t 1:M ../correct.sh; cd ..; done
+
+:<b>N</b>:number of folders created by the "partition.py" script
+:<b>M</b>: number of files in each folder.
+
+A sequence of steps is then performed to correct the long reads:
+
+:*Alignment of Pacbio reads against contigs with Nucmer.
+:*Selection of a set of contigs that covers best each long read to be corrected
+:*The "show-snps" program identifies the nucleotides that differ between contigs and long reads.
+:*A python script then performs the correction of long reads.
+
+==Output data==
+:The corrected sequences will be in the specified output folder, in "p000N.cor.fa" files. Finally, merge files with a bash command:
+
+    $ cat p00*.cor.fa > organism.cor.fa 
+
+==Correction evaluation==
+:Dataset:
+
+{| class="wikitable"
+|-
+!Reference genome
+|Escherichia coli k-12 MG1655 1 chromosome (4 641 652 pb)
+|-
+!Pacbio reads (P6C4)
+|87497 raw reads (100x coverage)
+|-
+!Illumina reads (MiSeq)
+|16759877 reads (2x150pb)
+|}
+
+The reference genome is used to evaluate long reads correction, based on metrics produced by Blasr alignments before the assembly and by the QUAST software after the assembly.
+
+''Blasr'' alignment metrics:
+
+:<b>Size</b>: The sum of the length of the corrected long reads, divided by the length of uncorrected long reads.
+
+:<b>Execution time</b>: Corrector execution time.
+
+:<b>% mapped region</b>: Proportion of corrected reads that \emph{BLASR} succeeded in mapping to the reference genome.
+
+:<b>Mean number of match</b>:  The average number of match per long read.
+
+:<b>% identity</b>: Percentage of identity given by \emph{BLASR} for the region of long read that could be aligned.
+
+''Quast'' metrics:
+
+:<b># contigs (> 1000pb)</b>: Total number of contigs exceeding 1000 bp after assembly.
+
+:<b>Total length</b>: Assembly length.
+
+:<b>N50</b>: Length for which the collection of all contigs of this length or greater, covers at least half of the assembly.
+
+:<b>Genome fraction (\%)</b>: the percentage of aligned bases in the reference genome.
+
+The assembly step is performed by ''Smartdenovo''.
+
+{| class="wikitable"
+|-
+!Metrics (Blasr, Quast)
+!Ectools correction
+|-
+!Size
+|75.22
+|-
+!Execution time
+|317s
+|-
+!% mapped region
+|99.6
+|-
+!Mean number of match
+|9 824
+|-
+!% identity
+|99.2
+|-
+!# contigs (>=1000pb)
+|12
+|-
+!N50
+|4 661 248
+|-
+!Total length
+|4 532 237
+|-
+!Genome fraction
+|97.18
+|}
+
+More assembly results can be found at
+
